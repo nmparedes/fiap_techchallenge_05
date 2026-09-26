@@ -1,0 +1,39 @@
+{
+  "name": "fiap-x",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": "24.15.0"
+  },
+  "packageManager": "npm@11.12.1",
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint . && npm run lint --workspaces --if-present",
+    "typecheck": "tsc --build --pretty false && tsc --project tsconfig.test.json --pretty false && npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "db:migrate": "npm run build && node --env-file-if-exists=.env packages/infrastructure/dist/cli/migrate.js",
+    "db:seed": "npm run build && node --env-file-if-exists=.env packages/infrastructure/dist/cli/seed.js",
+    "format": "prettier --write . --ignore-unknown && npm run format --workspaces --if-present",
+    "format:check": "prettier --check . --ignore-unknown && npm run format:check --workspaces --if-present",
+    "clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; rmSync('coverage', { recursive: true, force: true });\" && npm run clean --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@jest/globals": "30.5.0",
+    "@swc/core": "1.16.1",
+    "@swc/jest": "0.2.39",
+    "@types/node": "24.13.3",
+    "eslint": "10.9.1",
+    "jest": "30.5.0",
+    "jest-environment-jsdom": "30.5.0",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.69.0"
+  }
+}

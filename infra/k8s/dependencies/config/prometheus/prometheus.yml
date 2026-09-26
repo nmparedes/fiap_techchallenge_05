@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 5s
+
+scrape_configs:
+  - job_name: auth-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['auth-service:3001']
+
+  - job_name: video-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['video-service:3002']
+
+  - job_name: processor-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['processor-service:3003']
+
+  - job_name: notification-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['notification-service:3004']

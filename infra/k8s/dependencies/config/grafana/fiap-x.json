@@ -1,0 +1,232 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (service) (rate(fiap_x_http_requests_total[$__rate_interval]))",
+          "legendFormat": "{{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP request rate by service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (service, status_code) (rate(fiap_x_http_requests_total{status_code=~\"4..|5..\"}[$__rate_interval]))",
+          "legendFormat": "{{service}} {{status_code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP error rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, service) (rate(fiap_x_http_request_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{service}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP latency p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 8 },
+      "id": 4,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (outcome) (increase(fiap_x_video_uploads_total[$__range]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Uploads in selected period",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 8 },
+      "id": 5,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (outcome) (increase(fiap_x_video_retries_total[$__range]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Retries in selected period",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 8 },
+      "id": 6,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (outcome) (increase(fiap_x_processor_jobs_total{outcome=~\"completed|failed\"}[$__range]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Processing jobs in selected period",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 8 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, outcome) (rate(fiap_x_processor_job_duration_seconds_bucket[$__rate_interval])))",
+          "legendFormat": "{{outcome}} p95",
+          "refId": "A"
+        }
+      ],
+      "title": "Processing duration p95",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 8,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "sum by (outcome) (increase(fiap_x_notification_events_consumed_total{outcome=~\"persisted|duplicate\"}[$__range]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Notifications persisted or duplicated",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 0, "text": "Unavailable" },
+                "1": { "color": "green", "index": 1, "text": "Ready" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 9,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "fiap-x-prometheus" },
+          "expr": "fiap_x_readiness",
+          "instant": true,
+          "legendFormat": "{{service}} / {{dependency}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Dependency readiness",
+      "type": "stat"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 41,
+  "tags": ["fiap-x", "academic", "local"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "FIAP X",
+  "uid": "fiap-x-observability",
+  "version": 1,
+  "weekStart": ""
+}

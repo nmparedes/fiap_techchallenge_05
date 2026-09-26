@@ -1,0 +1,22 @@
+{
+  "name": "@fiap-x/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./jest": "./jest/index.js",
+    "./jest/node": "./jest/node.config.js",
+    "./jest/jsdom": "./jest/jsdom.config.js"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js",
+    "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js --coverage",
+    "clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; for (const path of ['dist', 'coverage']) rmSync(path, { recursive: true, force: true });\""
+  }
+}

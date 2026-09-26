@@ -1,0 +1,117 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-migrate
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: mysql-migrate
+    app.kubernetes.io/part-of: fiap-x
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql-migrate
+        app.kubernetes.io/part-of: fiap-x
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrate
+          image: mysql:8.4.6
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: MYSQL_USERNAME
+          command:
+            - sh
+            - -ec
+          args:
+            - |
+              export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"
+
+              until mysqladmin ping --host=mysql --user=root --silent; do
+                echo "Waiting for MySQL"
+                sleep 2
+              done
+
+              mysql --host=mysql --user=root < /migrations/00-create-databases.sql
+
+              for database in auth_db video_db notification_db; do
+                mysql --host=mysql --user=root "$database" <<'SQL'
+              CREATE TABLE IF NOT EXISTS schema_migrations (
+                version VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                name VARCHAR(160) NOT NULL,
+                checksum CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+                applied_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (version)
+              ) ENGINE=InnoDB;
+              SQL
+              done
+
+              apply_migration() {
+                database="$1"
+                version="$2"
+                migration_name="$3"
+                expected_checksum="$4"
+                migration_file="$5"
+                recorded_checksum="$(mysql --host=mysql --user=root --batch --skip-column-names \
+                  "$database" --execute="SELECT checksum FROM schema_migrations WHERE version = '$version'")"
+
+                if [ -z "$recorded_checksum" ]; then
+                  mysql --host=mysql --user=root "$database" < "$migration_file"
+                  mysql --host=mysql --user=root "$database" \
+                    --execute="INSERT INTO schema_migrations (version, name, checksum) VALUES ('$version', '$migration_name', '$expected_checksum')"
+                  echo "Applied $database/$version"
+                elif [ "$recorded_checksum" != "$expected_checksum" ]; then
+                  echo "Checksum mismatch for $database/$version" >&2
+                  exit 1
+                else
+                  echo "Skipped $database/$version"
+                fi
+              }
+
+              apply_migration auth_db 0001 create_users \
+                7ef9aa689bc73b4479c2bb231d5ce9facdcfc61fb963d1343b96b2ba5ecc374e \
+                /migrations/10-auth-create-users.sql
+              apply_migration video_db 0001 create_videos \
+                f2841d0f7e0a6668860cc024cfdbb32c78dad1afb03561865dfdb40fbe2d4da5 \
+                /migrations/20-video-create-videos.sql
+              apply_migration video_db 0002 add_video_error_code \
+                b6d04d3b4cf670e1a0b3a919279bcde262e97950ea6dde73bc72d0f25636c592 \
+                /migrations/21-video-add-error-code.sql
+              apply_migration notification_db 0001 create_notifications \
+                010029e724a78a8dbe45ae237f0e1715c865cbe796b77d72fc7330b138fb2712 \
+                /migrations/30-notification-create-notifications.sql
+              apply_migration notification_db 0002 add_failure_details \
+                0ac2c1d00dda7c42136eb715c0a171ca44e372e86435941a77b1947fda39ed2f \
+                /migrations/31-notification-add-failure-details.sql
+
+              mysql --host=mysql --user=root <<SQL
+              GRANT ALL PRIVILEGES ON auth_db.* TO '$MYSQL_USERNAME'@'%';
+              GRANT ALL PRIVILEGES ON video_db.* TO '$MYSQL_USERNAME'@'%';
+              GRANT ALL PRIVILEGES ON notification_db.* TO '$MYSQL_USERNAME'@'%';
+              FLUSH PRIVILEGES;
+              SQL
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: migrations
+              mountPath: /migrations
+              readOnly: true
+      volumes:
+        - name: migrations
+          configMap:
+            name: mysql-migrations

@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fiap-x
+
+resources:
+  - namespace.yaml
+  - dependency-config.yaml
+  - shared-storage.yaml
+  - mysql.yaml
+  - mysql-migration-job.yaml
+  - redis.yaml
+  - rabbitmq.yaml
+  - prometheus.yaml
+  - grafana.yaml
+
+configMapGenerator:
+  - name: mysql-migrations
+    namespace: fiap-x
+    files:
+      - 00-create-databases.sql=config/mysql/00-create-databases.sql
+      - 10-auth-create-users.sql=config/mysql/10-auth-create-users.sql
+      - 20-video-create-videos.sql=config/mysql/20-video-create-videos.sql
+      - 21-video-add-error-code.sql=config/mysql/21-video-add-error-code.sql
+      - 30-notification-create-notifications.sql=config/mysql/30-notification-create-notifications.sql
+      - 31-notification-add-failure-details.sql=config/mysql/31-notification-add-failure-details.sql
+  - name: prometheus-config
+    namespace: fiap-x
+    files:
+      - prometheus.yml=config/prometheus/prometheus.yml
+  - name: grafana-provisioning
+    namespace: fiap-x
+    files:
+      - datasource.yml=config/grafana/datasource.yml
+      - dashboards.yml=config/grafana/dashboards.yml
+  - name: grafana-dashboard
+    namespace: fiap-x
+    files:
+      - fiap-x.json=config/grafana/fiap-x.json

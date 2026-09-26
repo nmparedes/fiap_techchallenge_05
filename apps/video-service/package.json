@@ -1,0 +1,37 @@
+{
+  "name": "@fiap-x/video-service",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js",
+    "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js --coverage",
+    "clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; for (const path of ['dist', 'coverage']) rmSync(path, { recursive: true, force: true });\""
+  },
+  "dependencies": {
+    "@fastify/multipart": "10.1.1",
+    "@fastify/swagger": "9.8.1",
+    "@fastify/swagger-ui": "6.1.1",
+    "@fiap-x/config": "0.0.0",
+    "@fiap-x/contracts": "0.0.0",
+    "@fiap-x/infrastructure": "0.0.0",
+    "@fiap-x/observability": "0.0.0",
+    "@prometheus-io/client": "0.16.1",
+    "amqplib": "0.10.9",
+    "fastify": "5.12.1",
+    "mysql2": "3.14.5",
+    "redis": "5.8.2"
+  },
+  "devDependencies": {
+    "@types/amqplib": "0.10.7"
+  }
+}

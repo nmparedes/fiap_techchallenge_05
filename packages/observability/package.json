@@ -1,0 +1,23 @@
+{
+  "name": "@fiap-x/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js",
+    "test:coverage": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.js --coverage",
+    "clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; for (const path of ['dist', 'coverage']) rmSync(path, { recursive: true, force: true });\""
+  },
+  "dependencies": {
+    "@prometheus-io/client": "0.16.1",
+    "pino": "10.3.1"
+  }
+}

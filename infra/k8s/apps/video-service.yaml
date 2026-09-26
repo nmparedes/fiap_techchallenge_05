@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: video-service-config
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: video-service
+    app.kubernetes.io/part-of: fiap-x
+data:
+  VIDEO_HOST: 0.0.0.0
+  VIDEO_PORT: '3002'
+  AUTH_JWT_ISSUER: fiap-x-auth-service
+  AUTH_JWT_AUDIENCE: fiap-x-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-service
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: video-service
+    app.kubernetes.io/part-of: fiap-x
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/path: /metrics
+    prometheus.io/port: '3002'
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: video-service
+  ports:
+    - name: http
+      port: 3002
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: video-service
+    app.kubernetes.io/part-of: fiap-x
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: video-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: video-service
+        app.kubernetes.io/part-of: fiap-x
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: video-service
+          image: fiap-x/video-service:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: fiap-x-dependencies-config
+            - configMapRef:
+                name: video-service-config
+          env:
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-application
+                  key: AUTH_JWT_SECRET
+            - name: MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: MYSQL_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: MYSQL_PASSWORD
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: REDIS_URL
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: fiap-x-dependencies
+                  key: RABBITMQ_URL
+          ports:
+            - name: http
+              containerPort: 3002
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+          volumeMounts:
+            - name: video-storage
+              mountPath: /data/videos
+      volumes:
+        - name: video-storage
+          persistentVolumeClaim:
+            claimName: video-storage

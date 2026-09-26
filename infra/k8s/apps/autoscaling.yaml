@@ -1,0 +1,51 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: video-service
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: video-service
+    app.kubernetes.io/part-of: fiap-x
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: video-service
+  minReplicas: 1
+  maxReplicas: 3
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 120
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: processor-service
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/name: processor-service
+    app.kubernetes.io/part-of: fiap-x
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: processor-service
+  minReplicas: 1
+  maxReplicas: 4
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 180
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -1,0 +1,50 @@
+services:
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    restart: unless-stopped
+    environment:
+      AUTH_METRICS_TARGET: ${MONITORING_AUTH_TARGET:-host.docker.internal:3001}
+      VIDEO_METRICS_TARGET: ${MONITORING_VIDEO_TARGET:-host.docker.internal:3002}
+      PROCESSOR_METRICS_TARGET: ${MONITORING_PROCESSOR_TARGET:-host.docker.internal:3003}
+      NOTIFICATION_METRICS_TARGET: ${MONITORING_NOTIFICATION_TARGET:-host.docker.internal:3004}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./prometheus/prometheus.yml.template:/etc/prometheus/prometheus.yml.template:ro
+      - prometheus-data:/prometheus
+    entrypoint:
+      - /bin/sh
+      - -ec
+    command:
+      - |
+        sed \
+          -e "s|__AUTH_METRICS_TARGET__|$${AUTH_METRICS_TARGET}|g" \
+          -e "s|__VIDEO_METRICS_TARGET__|$${VIDEO_METRICS_TARGET}|g" \
+          -e "s|__PROCESSOR_METRICS_TARGET__|$${PROCESSOR_METRICS_TARGET}|g" \
+          -e "s|__NOTIFICATION_METRICS_TARGET__|$${NOTIFICATION_METRICS_TARGET}|g" \
+          /etc/prometheus/prometheus.yml.template > /tmp/prometheus.yml
+        exec /bin/prometheus \
+          --config.file=/tmp/prometheus.yml \
+          --storage.tsdb.path=/prometheus
+    ports:
+      - ${PROMETHEUS_PORT:-9090}:9090
+
+  grafana:
+    image: grafana/grafana:13.2.1
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-fiap-x-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - ${GRAFANA_PORT:-3000}:3000
+
+volumes:
+  prometheus-data:
+  grafana-data:

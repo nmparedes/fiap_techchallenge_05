@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS users (
+  id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  username VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  display_name VARCHAR(120) NOT NULL,
+  password_hash VARCHAR(60) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_username (username),
+  CONSTRAINT ck_users_username_length CHECK (CHAR_LENGTH(username) BETWEEN 3 AND 64)
+) ENGINE=InnoDB;

@@ -1,0 +1,80 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fiap-x
+  namespace: fiap-x
+  labels:
+    app.kubernetes.io/part-of: fiap-x
+  annotations:
+    # Slightly above the application limit (200 MiB) for multipart metadata.
+    # The video service remains the authority for the exact file-size limit.
+    nginx.ingress.kubernetes.io/proxy-body-size: 210m
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-origin: http://fiap-x.local
+    nginx.ingress.kubernetes.io/cors-allow-methods: GET, POST, PATCH, OPTIONS
+    nginx.ingress.kubernetes.io/cors-allow-headers: Authorization, Content-Type, X-Request-ID
+    nginx.ingress.kubernetes.io/cors-allow-credentials: 'false'
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: fiap-x.local
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  name: http
+          - path: /videos
+            pathType: Prefix
+            backend:
+              service:
+                name: video-service
+                port:
+                  name: http
+          - path: /notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http
+    - host: auth.fiap-x.local
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  name: http
+    - host: video.fiap-x.local
+      http:
+        paths:
+          - path: /videos
+            pathType: Prefix
+            backend:
+              service:
+                name: video-service
+                port:
+                  name: http
+    - host: notification.fiap-x.local
+      http:
+        paths:
+          - path: /notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  name: http
