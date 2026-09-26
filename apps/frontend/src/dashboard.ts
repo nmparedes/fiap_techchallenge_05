@@ -413,7 +413,9 @@ export class DashboardController {
     this.clearCountdownTimer();
 
     if (nextRefreshAt === null) {
-      this.refreshCountdown.textContent = document.hidden ? 'ATUALIZAÇÃO PAUSADA' : 'ATUALIZANDO...';
+      this.refreshCountdown.textContent = document.hidden
+        ? 'ATUALIZAÇÃO PAUSADA'
+        : 'ATUALIZANDO...';
       return;
     }
 

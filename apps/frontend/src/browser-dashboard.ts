@@ -68,7 +68,12 @@ export function createBrowserDashboardGateway(
           }
 
           try {
-            const status = await requestVideoStatus(fetchImplementation, origin, video.id, accessToken);
+            const status = await requestVideoStatus(
+              fetchImplementation,
+              origin,
+              video.id,
+              accessToken,
+            );
             return {
               ...status.video,
               errorMessage: status.processingFailure ?? status.video.errorMessage,
@@ -181,14 +186,21 @@ async function requestJson(
   try {
     response = await fetchImplementation(new URL(path, origin), {
       ...init,
-      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}`, ...init.headers },
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        ...init.headers,
+      },
     });
   } catch {
     throw new DashboardRequestError(null, unavailableMessage);
   }
 
   if (!response.ok) {
-    throw new DashboardRequestError(response.status, videoErrorMessage(response.status, unavailableMessage));
+    throw new DashboardRequestError(
+      response.status,
+      videoErrorMessage(response.status, unavailableMessage),
+    );
   }
 
   try {
@@ -218,12 +230,19 @@ async function requestNoContent(
   }
 
   if (!response.ok) {
-    throw new DashboardRequestError(response.status, videoErrorMessage(response.status, unavailableMessage));
+    throw new DashboardRequestError(
+      response.status,
+      videoErrorMessage(response.status, unavailableMessage),
+    );
   }
 }
 
 function unwrapSuccess(value: unknown): unknown {
-  if (typeof value !== 'object' || value === null || (value as Record<string, unknown>)['success'] !== true) {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    (value as Record<string, unknown>)['success'] !== true
+  ) {
     throw new DashboardRequestError(null, 'O serviço retornou uma resposta inválida.');
   }
 
@@ -248,7 +267,10 @@ function isFailedVideoStatusResponse(value: unknown): value is FailedVideoStatus
   );
 }
 
-function videoErrorMessage(status: number, fallback = 'O serviço de vídeos está indisponível.'): string {
+function videoErrorMessage(
+  status: number,
+  fallback = 'O serviço de vídeos está indisponível.',
+): string {
   if (status === 400) {
     return 'Verifique os dados enviados.';
   }

@@ -42,9 +42,11 @@ describe('browser video upload gateway', () => {
       origin: 'http://fiap-x.local',
     });
 
-    await expect(gateway.upload(new File(['video'], 'aula.mp4'), 1, 'token')).rejects.toMatchObject({
-      status: null,
-      message: 'O serviço de vídeos está indisponível.',
-    });
+    await expect(gateway.upload(new File(['video'], 'aula.mp4'), 1, 'token')).rejects.toMatchObject(
+      {
+        status: null,
+        message: 'O serviço de vídeos está indisponível.',
+      },
+    );
   });
 });

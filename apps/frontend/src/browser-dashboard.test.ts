@@ -21,7 +21,10 @@ describe('browser dashboard gateway', () => {
         }),
       )
       .mockResolvedValueOnce(
-        response({ success: true, data: { items: [], page: 1, pageSize: 20, total: 0, totalPages: 0 } }),
+        response({
+          success: true,
+          data: { items: [], page: 1, pageSize: 20, total: 0, totalPages: 0 },
+        }),
       );
     const gateway = createBrowserDashboardGateway({
       fetchImplementation,

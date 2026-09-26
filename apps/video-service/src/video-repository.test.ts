@@ -73,10 +73,10 @@ describe('MySqlVideoRepository', () => {
     execute.mockResolvedValueOnce([{ affectedRows: 1 }, []]);
 
     await expect(new MySqlVideoRepository(pool).deleteQueued(userId, videoId)).resolves.toBe(true);
-    expect(execute).toHaveBeenCalledWith(
-      expect.stringContaining("status = 'QUEUED'"),
-      [videoId, userId],
-    );
+    expect(execute).toHaveBeenCalledWith(expect.stringContaining("status = 'QUEUED'"), [
+      videoId,
+      userId,
+    ]);
   });
 
   it('lists and loads videos only inside the authenticated owner boundary', async () => {
