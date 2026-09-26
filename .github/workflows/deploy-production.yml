@@ -1,0 +1,151 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Immutable image tag published by the release workflow (for example, v1.0.0)
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Immutable image tag published by the release workflow (for example, v1.0.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.image_tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      KUBECONFIG_B64: ${{ secrets.PRODUCTION_KUBECONFIG_B64 }}
+      AUTH_JWT_SECRET: ${{ secrets.PRODUCTION_AUTH_JWT_SECRET }}
+      MYSQL_USERNAME: ${{ secrets.PRODUCTION_MYSQL_USERNAME }}
+      MYSQL_PASSWORD: ${{ secrets.PRODUCTION_MYSQL_PASSWORD }}
+      REDIS_URL: ${{ secrets.PRODUCTION_REDIS_URL }}
+      RABBITMQ_URL: ${{ secrets.PRODUCTION_RABBITMQ_URL }}
+      GHCR_PULL_TOKEN: ${{ secrets.PRODUCTION_GHCR_PULL_TOKEN }}
+      GHCR_PULL_USERNAME: ${{ vars.PRODUCTION_GHCR_PULL_USERNAME }}
+      K8S_NAMESPACE: ${{ vars.PRODUCTION_NAMESPACE || 'fiap-x' }}
+      PRODUCTION_DOMAIN: ${{ vars.PRODUCTION_DOMAIN }}
+      PRODUCTION_INGRESS_CLASS: ${{ vars.PRODUCTION_INGRESS_CLASS || 'nginx' }}
+      PRODUCTION_VIDEO_STORAGE_CLAIM: ${{ vars.PRODUCTION_VIDEO_STORAGE_CLAIM || 'video-storage' }}
+      MYSQL_HOST: ${{ vars.PRODUCTION_MYSQL_HOST }}
+      MYSQL_PORT: ${{ vars.PRODUCTION_MYSQL_PORT || '3306' }}
+      MYSQL_SSL: ${{ vars.PRODUCTION_MYSQL_SSL || 'true' }}
+      REDIS_HOST: ${{ vars.PRODUCTION_REDIS_HOST }}
+      REDIS_PORT: ${{ vars.PRODUCTION_REDIS_PORT || '6379' }}
+      RABBITMQ_HOST: ${{ vars.PRODUCTION_RABBITMQ_HOST }}
+      RABBITMQ_PORT: ${{ vars.PRODUCTION_RABBITMQ_PORT || '5672' }}
+      PROMETHEUS_URL: ${{ vars.PRODUCTION_PROMETHEUS_URL || '' }}
+      IMAGE_REGISTRY: ${{ vars.PRODUCTION_IMAGE_REGISTRY || format('ghcr.io/{0}', github.repository_owner) }}
+      IMAGE_TAG: ${{ inputs.image_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate production configuration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$IMAGE_TAG" =~ ^v[0-9A-Za-z._-]+$|^sha-[0-9a-f]{40}$ ]] || {
+            echo 'image_tag must be a published tag such as v1.0.0 or sha-<commit>.' >&2
+            exit 1
+          }
+          for variable in \
+            KUBECONFIG_B64 AUTH_JWT_SECRET MYSQL_USERNAME MYSQL_PASSWORD REDIS_URL RABBITMQ_URL \
+            GHCR_PULL_TOKEN GHCR_PULL_USERNAME PRODUCTION_DOMAIN MYSQL_HOST REDIS_HOST RABBITMQ_HOST; do
+            [[ -n "${!variable}" ]] || {
+              echo "Missing required production configuration: $variable" >&2
+              exit 1
+            }
+          done
+
+      - name: Configure cluster access
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          printf '%s' "$KUBECONFIG_B64" | base64 --decode > "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Apply production configuration and secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          kubectl create namespace "$K8S_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl --namespace "$K8S_NAMESPACE" create configmap fiap-x-dependencies-config \
+            --from-literal=MYSQL_HOST="$MYSQL_HOST" \
+            --from-literal=MYSQL_PORT="$MYSQL_PORT" \
+            --from-literal=MYSQL_CONNECTION_LIMIT=10 \
+            --from-literal=MYSQL_SSL="$MYSQL_SSL" \
+            --from-literal=REDIS_HOST="$REDIS_HOST" \
+            --from-literal=REDIS_PORT="$REDIS_PORT" \
+            --from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" \
+            --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" \
+            --from-literal=PROMETHEUS_URL="$PROMETHEUS_URL" \
+            --from-literal=VIDEO_STORAGE_ROOT=/data/videos \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl --namespace "$K8S_NAMESPACE" create secret generic fiap-x-application \
+            --from-literal=AUTH_JWT_SECRET="$AUTH_JWT_SECRET" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl --namespace "$K8S_NAMESPACE" create secret generic fiap-x-dependencies \
+            --from-literal=MYSQL_USERNAME="$MYSQL_USERNAME" \
+            --from-literal=MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+            --from-literal=REDIS_URL="$REDIS_URL" \
+            --from-literal=RABBITMQ_URL="$RABBITMQ_URL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl --namespace "$K8S_NAMESPACE" create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="$GHCR_PULL_USERNAME" \
+            --docker-password="$GHCR_PULL_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl --namespace "$K8S_NAMESPACE" patch serviceaccount default --type merge \
+            --patch '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
+
+      - name: Verify platform prerequisites
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          kubectl --namespace "$K8S_NAMESPACE" get persistentvolumeclaim "$PRODUCTION_VIDEO_STORAGE_CLAIM"
+
+      - name: Apply application release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          kubectl kustomize infra/k8s/overlays/production \
+            | envsubst '${K8S_NAMESPACE} ${IMAGE_REGISTRY} ${IMAGE_TAG} ${PRODUCTION_DOMAIN} ${PRODUCTION_INGRESS_CLASS} ${PRODUCTION_VIDEO_STORAGE_CLAIM}' \
+            > "$RUNNER_TEMP/production.yaml"
+          ! grep -q '\${' "$RUNNER_TEMP/production.yaml"
+          kubectl apply -f "$RUNNER_TEMP/production.yaml"
+
+      - name: Wait for application rollouts
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for deployment in auth-service video-service processor-service notification-service frontend; do
+            kubectl --namespace "$K8S_NAMESPACE" rollout status "deployment/$deployment" --timeout=300s
+          done
+
+      - name: Remove temporary cluster credential
+        if: ${{ always() }}
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/kubeconfig"

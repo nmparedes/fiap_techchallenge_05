@@ -10,7 +10,7 @@ FIAP X uses `mysql2` directly and does not use an ORM. Three logical databases s
 | Video Service        | `video_db`        | `videos`        |
 | Notification Service | `notification_db` | `notifications` |
 
-The Processor Service is stateless at this stage. Its durable work queue remains in RabbitMQ,
+The Processor Service is stateless. Its durable work queue remains in RabbitMQ,
 while video processing state belongs to the Video Service.
 
 ## Migrations

@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: processor-service
+spec:
+  template:
+    spec:
+      volumes:
+        - name: video-storage
+          persistentVolumeClaim:
+            claimName: ${PRODUCTION_VIDEO_STORAGE_CLAIM}

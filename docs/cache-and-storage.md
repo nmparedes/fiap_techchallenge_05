@@ -41,6 +41,6 @@ frames directory. After every attempt, `cleanupVideoProcessingAttempt` removes t
 directory. It preserves the input after failure or retry and removes it only when the caller
 confirms successful processing. The completed `output.zip` is preserved.
 
-The storage root must refer to filesystem storage shared by the Video and Processor Services in a
-later deployment. Video bytes and ZIP files must never be placed in RabbitMQ messages, Redis
+The storage root must refer to filesystem storage shared by the Video and Processor Services. Video
+bytes and ZIP files must never be placed in RabbitMQ messages, Redis
 values, or MySQL columns; those systems store only events, cacheable metadata, and paths.

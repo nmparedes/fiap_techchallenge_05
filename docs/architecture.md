@@ -1,7 +1,7 @@
 # FIAP X architecture and flow
 
-FIAP X separates authenticated HTTP responsibilities from asynchronous video processing. The
-deployment target documented by this repository is a local, single-node Minikube environment.
+FIAP X separates authenticated HTTP responsibilities from asynchronous video processing. It runs
+locally on Minikube and can be deployed to a prepared Kubernetes production environment.
 
 ## Component view
 

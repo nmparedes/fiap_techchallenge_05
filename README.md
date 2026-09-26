@@ -5,8 +5,9 @@ hackathon. An authenticated user uploads a video, the system extracts frames asy
 successful job produces a downloadable ZIP archive.
 
 The implementation is a TypeScript monorepo with a browser frontend, four Fastify services,
-RabbitMQ, MySQL, Redis, shared file storage, Prometheus, Grafana, Docker, and Kubernetes for local
-Minikube execution. See the [architecture and complete flow](docs/architecture.md).
+RabbitMQ, MySQL, Redis, shared file storage, Prometheus, Grafana, Docker, and Kubernetes. It
+supports local Minikube execution and deployment to a prepared Kubernetes environment. See the
+[architecture and complete flow](docs/architecture.md).
 
 ## Prerequisites
 
@@ -125,8 +126,7 @@ npm run build
 ```
 
 Jest enforces at least 80% for statements, branches, functions, and lines in every workspace
-aggregate. The latest audited execution passed 59 suites and 339 tests; see the
-[final audit](docs/final-audit.md).
+aggregate.
 
 ## Environment variables
 
@@ -163,13 +163,13 @@ credential values.
 - [RabbitMQ topology](docs/rabbitmq-topology.md)
 - [Cache and shared storage](docs/cache-and-storage.md)
 - [Observability](docs/observability.md)
-- [CI and image delivery](docs/ci.md)
-- [Final audit](docs/final-audit.md)
+- [Continuous integration and delivery](docs/ci.md)
+- [Production deployment](docs/production-deployment.md)
 
 ## Academic limitations
 
-This repository targets a local Minikube demonstration. It does not implement cloud deployment,
-TLS, external notifications, public registration, refresh tokens, password recovery, MFA, RBAC,
-real-time UI updates, processing cancellation, progress percentage, or automatic retry of
-functional FFmpeg/ZIP failures. The audit statically validated Docker and Kubernetes definitions;
-a complete runtime rollout was not asserted by that audit.
+This repository supports local Minikube operation and deployment to a prepared Kubernetes
+environment. It does not provision cloud infrastructure, TLS certificates, or managed data
+services. It also does not implement external notifications, public registration, refresh tokens,
+password recovery, MFA, RBAC, real-time UI updates, processing cancellation, progress percentage,
+or automatic retry of functional FFmpeg/ZIP failures.

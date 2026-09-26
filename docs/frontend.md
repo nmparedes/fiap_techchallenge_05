@@ -1,7 +1,7 @@
 # Frontend
 
-O frontend usa Vite, TypeScript e APIs nativas do navegador. Configure as origens públicas antes de
-iniciar:
+The frontend uses Vite, TypeScript, and native browser APIs. Configure the public API origins for
+local development:
 
 ```dotenv
 VITE_AUTH_API_BASE_URL=http://localhost:3001
@@ -9,10 +9,11 @@ VITE_VIDEO_API_BASE_URL=http://localhost:3002
 VITE_NOTIFICATION_API_BASE_URL=http://localhost:3004
 ```
 
-As URLs devem ser absolutas e usar HTTP ou HTTPS. O token Bearer permanece somente em
-`sessionStorage`; os serviços identificam o usuário pelo token e o frontend não envia `userId`.
+Each URL must be absolute and use HTTP or HTTPS. The Bearer token remains only in
+`sessionStorage`; services identify the user from the token, and the frontend does not send a
+`userId`.
 
-Execute a partir da raiz do repositório:
+Run these commands from the repository root:
 
 ```sh
 npm run dev --workspace @fiap-x/frontend
@@ -22,6 +23,9 @@ npm run typecheck --workspace @fiap-x/frontend
 npm run test:coverage --workspace @fiap-x/frontend
 ```
 
-O painel consulta vídeos e notificações a cada três segundos enquanto a sessão está ativa e a página
-está visível. Uploads aceitam MP4, AVI, MOV, MKV, WMV, FLV e WebM, até 200 MiB, com FPS inteiro de
-1 a 10.
+The dashboard polls videos and notifications every three seconds while the session is active and
+the page is visible. Uploads accept MP4, AVI, MOV, MKV, WMV, FLV, and WebM files up to 200 MiB with
+an integer FPS from 1 to 10.
+
+The production frontend uses same-origin `/auth`, `/videos`, and `/notifications` routes provided
+by the Kubernetes Ingress.

@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fiap-x
+  annotations:
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://${PRODUCTION_DOMAIN}
+spec:
+  ingressClassName: ${PRODUCTION_INGRESS_CLASS}
+  rules:
+    - host: ${PRODUCTION_DOMAIN}
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  name: http
+          - path: /videos
+            pathType: Prefix
+            backend:
+              service:
+                name: video-service
+                port:
+                  name: http
+          - path: /notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http
