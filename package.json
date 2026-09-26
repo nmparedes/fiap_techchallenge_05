@@ -12,9 +12,10 @@
   },
   "packageManager": "npm@11.12.1",
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:shared && npm run build --workspace=@fiap-x/auth-service --workspace=@fiap-x/frontend --workspace=@fiap-x/notification-service --workspace=@fiap-x/processor-service --workspace=@fiap-x/video-service",
+    "build:shared": "npm run build --workspace=@fiap-x/config --workspace=@fiap-x/contracts --workspace=@fiap-x/observability --workspace=@fiap-x/test-utils && npm run build --workspace=@fiap-x/infrastructure",
     "lint": "eslint . && npm run lint --workspaces --if-present",
-    "typecheck": "tsc --build --pretty false && tsc --project tsconfig.test.json --pretty false && npm run typecheck --workspaces --if-present",
+    "typecheck": "npm run build:shared && tsc --build --pretty false && tsc --project tsconfig.test.json --pretty false && npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "db:migrate": "npm run build && node --env-file-if-exists=.env packages/infrastructure/dist/cli/migrate.js",
