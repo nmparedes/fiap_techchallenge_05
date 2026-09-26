@@ -314,7 +314,9 @@ export class Application {
           input.removeAttribute('aria-invalid');
         }
       });
-      form.parentElement?.querySelector<HTMLElement>('.login-message')?.replaceChildren(this.feedback);
+      form.parentElement
+        ?.querySelector<HTMLElement>('.login-message')
+        ?.replaceChildren(this.feedback);
       return;
     }
 
