@@ -1,29 +1,50 @@
-# Pipeline de qualidade
+# Continuous integration and delivery
 
-O workflow `.github/workflows/ci.yml` executa em pull requests e pushes para `main`, com Node.js 24.15.0 e npm 11.12.1. Depois de `npm ci`, aplica em sequência os gates `format:check`, `lint`, `typecheck`, `test:coverage` e `build`. O relatório de cobertura é enviado como artifact por 7 dias quando existir, inclusive se os testes falharem.
+## Quality checks
 
-## Inventário para a etapa 10.2
+The `.github/workflows/ci.yml` workflow runs for pushes and pull requests that target `dev`,
+`uat`, or `main`. It uses Node.js 24.15.0 and npm 11.12.1, installs the locked dependencies with
+`npm ci`, and runs these gates in order:
 
-- Branch principal: `main`. O diretório fornecido não contém metadados `.git`; portanto, este nome foi inferido pela convenção do projeto e deve ser confirmado quando o repositório Git estiver disponível.
-- Runtime: `engines.node` 24.15.0, `.node-version` e `.nvmrc` 24.15.0; `packageManager` fixa npm 11.12.1.
-- Scripts raiz: `format:check`, `lint`, `typecheck`, `test:coverage` e `build` já são agregadores do monorepo.
-- Workspaces: `apps/auth-service`, `apps/frontend`, `apps/notification-service`, `apps/processor-service`, `apps/video-service`, `packages/config`, `packages/contracts`, `packages/infrastructure`, `packages/observability` e `packages/test-utils`.
-- Jest: cada workspace usa seu `jest.config.js`, baseado em `packages/config/jest/base.config.js`; `coverageThreshold.global` exige 80% em branches, functions, lines e statements.
-- Dockerfiles existentes: `infra/docker/auth-service/Dockerfile`, `infra/docker/frontend/Dockerfile`, `infra/docker/notification-service/Dockerfile`, `infra/docker/processor-service/Dockerfile` e `infra/docker/video-service/Dockerfile`.
-- Dependências externas: os testes unitários não recebem serviços de MySQL, Redis, RabbitMQ, FFmpeg ou Minikube no pipeline.
+1. `npm run format:check`
+2. `npm run lint`
+3. `npm run typecheck`
+4. `npm run test:coverage`
+5. `npm run build`
 
-## Entrega de imagens versionadas
+Coverage reports are uploaded as workflow artifacts for seven days whenever they are available,
+including when a test command fails.
 
-O workflow `.github/workflows/images.yml` constrói as cinco imagens em pull requests que alterem arquivos de build, sem login ou publicação. Um push de tag `v*` autentica no GHCR somente com `GITHUB_TOKEN`, verifica as imagens e publica duas tags imutáveis por componente: a versão Git, como `v1.2.3`, e `sha-<commit>`.
+The quality workflow does not start Minikube, publish images, or deploy an environment. Minikube
+is a local development environment started explicitly by the developer.
 
-As imagens publicadas seguem estes nomes:
+## Container images
 
-- `ghcr.io/<owner>/fiap-x-auth-service:<versao>`
-- `ghcr.io/<owner>/fiap-x-video-service:<versao>`
-- `ghcr.io/<owner>/fiap-x-processor-service:<versao>`
-- `ghcr.io/<owner>/fiap-x-notification-service:<versao>`
-- `ghcr.io/<owner>/fiap-x-frontend:<versao>`
+The `.github/workflows/images.yml` workflow builds all five application images for pull requests
+that change image inputs. Pull-request builds verify the runtime images but do not authenticate to
+a registry or publish an image.
 
-O `infra/k8s/apps/kustomization.yaml` mantém `fiap-x/<componente>:local` como padrão para o build local da Fase 09. Para preparar manualmente uma versão publicada, substitua cada `newName` pelo nome GHCR correspondente e cada `newTag` pela tag explícita desejada. A política `IfNotPresent` usa a imagem local já carregada quando disponível ou permite obtê-la do registry. Pacotes GHCR privados também exigem que o usuário configure manualmente uma credencial de pull no cluster local.
+When a change is merged into `main`, the workflow publishes immutable GHCR images tagged with the
+commit SHA:
 
-O workflow não cria tags Git, não publica `latest`, não cria releases e não acessa nem implanta no Minikube.
+- `ghcr.io/<owner>/fiap-x-auth-service:sha-<commit>`
+- `ghcr.io/<owner>/fiap-x-video-service:sha-<commit>`
+- `ghcr.io/<owner>/fiap-x-processor-service:sha-<commit>`
+- `ghcr.io/<owner>/fiap-x-notification-service:sha-<commit>`
+- `ghcr.io/<owner>/fiap-x-frontend:sha-<commit>`
+
+Pushing a version tag that matches `v*` publishes both the version tag, such as `v1.2.3`, and the
+corresponding `sha-<commit>` tag. Workflows use the repository `GITHUB_TOKEN` with
+job-scoped `packages: write` permission for publication.
+
+## Production deployment
+
+After a merge into `main`, the image workflow calls the production deployment workflow only when
+the repository variable `PRODUCTION_DEPLOY_ENABLED` is exactly `true`. The deployment uses the
+immutable image tag produced by that merge and is protected by the GitHub `production`
+Environment.
+
+The production workflow does not provision cloud infrastructure. It deploys the application to a
+prepared Kubernetes cluster using the configuration stored in the `production` Environment. See
+[Production deployment](production-deployment.md) for the required cluster resources, GitHub
+variables, and secrets.

@@ -95,7 +95,7 @@ or Kubernetes resources in this monitoring setup.
 
 ## Minikube handoff
 
-This compose stack is only the isolated pre-Phase 09 validation environment. Kubernetes application
-and monitoring manifests are intentionally not included here. During Phase 09, use addresses that
-are reachable from the Prometheus workload for the same four `/metrics` targets; the metric names,
-datasource UID, and dashboard do not need to change.
+This Compose stack is a standalone local validation environment. Kubernetes application and
+monitoring manifests are intentionally not included here. For Kubernetes deployments, use addresses
+that are reachable from the Prometheus workload for the same four `/metrics` targets; the metric
+names, datasource UID, and dashboard do not need to change.
